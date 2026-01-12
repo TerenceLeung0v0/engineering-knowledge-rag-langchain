@@ -1,0 +1,78 @@
+# =========================
+#  Python general
+# =========================
+__pycache__/
+*.py[cod]
+*.log
+
+# =========================
+#  Virtual environments
+# =========================
+.venv/
+venv/
+env/
+*.env
+.env
+
+# =========================
+#  OS / Editor
+# =========================
+.DS_Store
+.vscode/
+.idea/
+*.code-workspace
+
+# =========================
+#  Jupyter
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+#  Data (raw & generated)
+# =========================
+data/raw_docs/
+data/lora_train/
+data/curated_qa/*.csv
+!data/curated_qa/*.jsonl
+
+# =========================
+#  Artifacts (generated)
+# =========================
+artifacts/vectorstore/
+artifacts/lora_adapter/
+artifacts/tmp/
+artifacts/cache/
+
+# =========================
+#  Evaluation reports
+# =========================
+reports/*.html
+reports/*.png
+reports/*.csv
+
+# allow lightweight evaluation summaries
+!reports/*.json
+!reports/*.txt
+
+# =========================
+#  Build / packaging
+# =========================
+build/
+dist/
+*.egg-info/
+
+# =========================
+#  Security / secrets
+# =========================
+*.pem
+*.key
+*.crt
+
+# =========================
+#  System cache / temp
+# =========================
+*.tmp
+*.bak
+*.swp
+Thumbs.db
+.pytest_cache/

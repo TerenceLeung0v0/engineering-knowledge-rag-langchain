@@ -1,0 +1,18 @@
+Total: 31
+Passed: 24
+Pass rate: 77.42%
+
+Actual status counts:
+- ok: 17
+- refuse: 8
+- ambiguous: 6
+- unknown: 0
+
+Top failures (first 10):
+- IOT_007 | expect=ok actual=ambiguous status_ok=False sources_ok=True hygiene_ok=True
+- IOT_010 | expect=ok actual=refuse status_ok=False sources_ok=True hygiene_ok=True
+- MQTT_002 | expect=ok actual=ambiguous status_ok=False sources_ok=True hygiene_ok=True
+- MQTT_003 | expect=ok actual=ambiguous status_ok=False sources_ok=True hygiene_ok=True
+- MQTT_004 | expect=ok actual=ambiguous status_ok=False sources_ok=True hygiene_ok=True
+- MIX_002 | expect=ok actual=ambiguous status_ok=False sources_ok=True hygiene_ok=True
+- MIX_003 | expect=ok actual=ambiguous status_ok=False sources_ok=True hygiene_ok=True

@@ -1,0 +1,119 @@
+from __future__ import annotations
+from typing import Any
+
+from langchain_community.vectorstores import FAISS
+from langchain_core.runnables import Runnable, RunnableLambda, RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
+
+from src.config import (
+    VECTORSTORE_DIR,
+    RETRIEVAL_CONFIG, EMBEDDING_CONFIG, LLM_CONFIG, PROMPT_CONFIG,
+    DEBUG_CONFIG
+)
+from src.rag.embeddings import build_embeddings
+from src.rag.llms import build_llm
+from src.rag.prompts import RAG_PROMPT
+from src.rag.formatting import format_docs_for_prompt, normalize_answer_for_cli
+from src.rag.gating import build_gate_config
+from src.rag.retriever import build_retrieve_and_gate_l2
+from src.rag.policy import refuse_if_no_docs, REFUSAL_TEXT
+from src.utils.diagnostics import build_debug_logger
+
+_dbg = build_debug_logger(
+    cfg=DEBUG_CONFIG,
+    domain_path="rag.chain",
+    key="print_refusal_reason"
+)
+
+def _calculate_safe_fetch_k(
+    *,
+    fetch_k: int,
+    final_k: int,
+    max_options: int,
+    buffer: int=2
+) -> int:
+    if final_k < 1:
+        raise ValueError(f"final_k must be at least 1, got {final_k}")
+    
+    safe_fetch_k = (final_k + 2*max_options) + buffer
+    return max(safe_fetch_k, fetch_k)
+
+def _answer_or_refuse(
+    state: dict[str, Any],
+    *, llm: Runnable
+) -> str:
+    if state.get("skip_llm", False):
+        _dbg(f"refusal_reason = {state.get('refusal_reason')}")
+        return normalize_answer_for_cli(state.get("answer", REFUSAL_TEXT))
+
+    try:
+        raw = (RAG_PROMPT | llm | StrOutputParser()).invoke({
+            "input": state.get("input", ""),
+            "context": state.get("context", "")
+        })
+        return normalize_answer_for_cli(str(raw))
+    except Exception as e:
+        return f"LLM backend error. {type(e).__name__}."
+
+def _format_final_output(state: dict[str, Any]) -> dict[str, Any]:
+    is_refusal = state.get("skip_llm", False)
+
+    return {
+        "input": state.get("input", ""),
+        "source_documents": [] if is_refusal else state.get("docs", []),
+        "answer": state.get("answer", ""),
+        "status": state.get("status", None),
+        "refusal_reason": state.get("refusal_reason", None),
+        "options": state.get("options", None),
+        "selected_option": state.get("selected_option", None)
+    }
+
+def build_rag_chain() -> Runnable:
+    max_chars = int(PROMPT_CONFIG["max_chars_per_chunk"])
+    gate_cfg = build_gate_config(RETRIEVAL_CONFIG)
+    max_options=int(RETRIEVAL_CONFIG["max_options"])
+    
+    fetch_k = _calculate_safe_fetch_k(
+        fetch_k=int(RETRIEVAL_CONFIG["fetch_k"]),
+        final_k=gate_cfg.final_k,
+        max_options=max_options
+    )
+    
+    embeddings = build_embeddings(EMBEDDING_CONFIG)
+
+    vectorstore = FAISS.load_local(
+        str(VECTORSTORE_DIR),
+        embeddings,
+        allow_dangerous_deserialization=True,
+    )
+
+    retrieve_and_gate = build_retrieve_and_gate_l2(
+        gate_cfg=gate_cfg,
+        vectorstore=vectorstore,
+        fetch_k=fetch_k,
+        max_options=max_options
+    )
+
+    llm = build_llm(LLM_CONFIG)
+
+    chain = (
+        # Retrieve docs
+        RunnableLambda(retrieve_and_gate)
+        # Decide refuse early
+        | RunnableLambda(refuse_if_no_docs)        
+        # Format docs into context string
+        | RunnablePassthrough.assign(
+            context=lambda x: format_docs_for_prompt(
+                x["docs"],
+                max_chars_per_chunk=max_chars
+            )
+        )
+        # Compute answer
+        | RunnablePassthrough.assign(
+            answer=RunnableLambda(lambda x: _answer_or_refuse(x, llm=llm))
+        )
+        # Final putput
+        | RunnableLambda(_format_final_output)
+    )
+    
+    return chain
