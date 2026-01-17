@@ -14,9 +14,10 @@ from src.rag.embeddings import build_embeddings
 from src.rag.llms import build_llm
 from src.rag.prompts import RAG_PROMPT
 from src.rag.formatting import format_docs_for_prompt, normalize_answer_for_cli
-from src.rag.gating import build_gate_config
+from src.rag.gating import GateConfig
 from src.rag.retriever import build_retrieve_and_gate_l2
 from src.rag.policy import refuse_if_no_docs, REFUSAL_TEXT
+from src.rag.ambiguity import AmbiguityConfig
 from src.utils.diagnostics import build_debug_logger
 
 _dbg = build_debug_logger(
@@ -70,7 +71,7 @@ def _format_final_output(state: dict[str, Any]) -> dict[str, Any]:
 
 def build_rag_chain() -> Runnable:
     max_chars = int(PROMPT_CONFIG["max_chars_per_chunk"])
-    gate_cfg = build_gate_config(RETRIEVAL_CONFIG)
+    gate_cfg = GateConfig.from_dict(RETRIEVAL_CONFIG)
     max_options=int(RETRIEVAL_CONFIG["max_options"])
     
     fetch_k = _calculate_safe_fetch_k(
@@ -87,11 +88,16 @@ def build_rag_chain() -> Runnable:
         allow_dangerous_deserialization=True,
     )
 
+    ambiguity_cfg = AmbiguityConfig.from_dict(
+        RETRIEVAL_CONFIG,
+        embed_docs=embeddings.embed_documents
+    )
+
     retrieve_and_gate = build_retrieve_and_gate_l2(
         gate_cfg=gate_cfg,
         vectorstore=vectorstore,
         fetch_k=fetch_k,
-        max_options=max_options
+        ambiguity_cfg=ambiguity_cfg
     )
 
     llm = build_llm(LLM_CONFIG)

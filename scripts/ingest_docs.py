@@ -6,6 +6,7 @@ from src.utils.files import empty_directory_contents
 from src.utils.diagnostics import build_debug_logger 
 
 import argparse
+import sys
 
 _fs_logger = build_debug_logger(
     cfg=DEBUG_CONFIG,
@@ -41,8 +42,10 @@ def main() -> None:
             print("To rebuild: python scripts/ingest_docs.py --rebuild")
             return    
     
-    n_chunks = build_vectorstore()
-    print(f"Vectorstore built. Total chunks: {n_chunks}")
+    stats = build_vectorstore()
+    print(f"Vectorstore built. files={stats.num_files}, pages={stats.num_pages}, chunks={stats.num_chunks}")
+
+    return 0
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

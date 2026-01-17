@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "engineering-knowledge-rag-langchain"
-version = "0.1.0"
+version = "0.2.0"
 description = "RAG-based engineering knowledge assistant using LangChain"
 requires-python = ">=3.10"
 

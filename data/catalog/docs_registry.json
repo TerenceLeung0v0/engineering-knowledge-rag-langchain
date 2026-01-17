@@ -1,0 +1,20 @@
+{
+  "rules": [
+    {
+      "match": {"filename": "mqtt-v3.1.1-os.pdf"},
+      "tags": {"domain": "mqtt", "doc_type": "spec", "vendor": "oasis", "product": "mqtt", "version": "3.1.1"}
+    },
+    {
+      "match": {"filename": "iot-dg.pdf"},
+      "tags": {"domain": "aws_iot", "doc_type": "guide", "vendor": "aws", "product": "iot_core"}
+    },
+    {
+      "match": {"filename": "designing-mqtt-topics-aws-iot-core.pdf"},
+      "tags": {"domain": "aws_iot", "doc_type": "whitepaper", "vendor": "aws", "product": "iot_core"}
+    },
+    {
+      "match": {"filename": "white-paper-iot-july-2018.pdf"},
+      "tags": {"domain": "iot_general", "doc_type": "whitepaper", "vendor": "unknown", "product": "iot", "version": "2018"}
+    }
+  ]
+}

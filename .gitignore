@@ -32,8 +32,12 @@ env/
 # =========================
 data/raw_docs/
 data/lora_train/
-data/curated_qa/*.csv
+# evaluation contract (source-of-truth)
+data/curated_qa/*
 !data/curated_qa/*.jsonl
+# catalog registry (source-of-truth)
+data/catalog/*
+!data/catalog/*.json
 
 # =========================
 #  Artifacts (generated)
@@ -50,9 +54,9 @@ reports/*.html
 reports/*.png
 reports/*.csv
 
-# allow lightweight evaluation summaries
-!reports/*.json
-!reports/*.txt
+# evaluation artifacts
+!reports/eval_*.jsonl
+!reports/eval_*.txt
 
 # =========================
 #  Build / packaging
