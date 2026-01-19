@@ -1,0 +1,65 @@
+{"id":"OOD_001","query":"what is the capital of france","expect_status":"refuse","notes":"out-of-domain sanity: should refuse"}
+{"id":"OOD_002","query":"tell me a joke","expect_status":"refuse","notes":"out-of-domain: should refuse"}
+{"id":"OOD_003","query":"bitcoin price today","expect_status":"refuse","notes":"out-of-domain: should refuse"}
+{"id":"OOD_004","query":"who is the CEO of Apple","expect_status":"refuse","notes":"out-of-domain: should refuse"}
+{"id":"OOD_005","query":"write python code to sort a list","expect_status":"refuse","notes":"out-of-domain: should refuse"}
+{"id":"OOD_006","query":"what is TCP","expect_status":"refuse","notes":"OOD networking general; should refuse"}
+{"id":"OOD_007","query":"explain transformer architecture","expect_status":"refuse","notes":"OOD AI; should refuse"}
+{"id":"OOD_008","query":"weather in hong kong today","expect_status":"refuse","notes":"OOD current events; should refuse"}
+{"id":"OOD_009","query":"how to cook pasta","expect_status":"refuse","notes":"OOD; should refuse"}
+{"id":"OOD_010","query":"kubernetes deployment rollout restart","expect_status":"refuse","notes":"OOD; should refuse"}
+
+{"id":"IOT_001","query":"What is AWS IoT Jobs?","expect_status":"ok","min_sources":1}
+{"id":"IOT_002","query":"What is a job document in AWS IoT Jobs?","expect_status":"ok","min_sources":1}
+{"id":"IOT_003","query":"What is a job execution in AWS IoT Jobs?","expect_status":"ok","min_sources":1}
+{"id":"IOT_004","query":"What does TIMED_OUT mean for an AWS IoT job execution?","expect_status":"ok","min_sources":1}
+{"id":"IOT_005","query":"When should a device report REJECTED for a job execution?","expect_status":"ok","min_sources":1}
+{"id":"IOT_006","query":"What are the states of a job execution?","expect_status":"ok","min_sources":1}
+{"id":"IOT_007","query":"What is the purpose of thing groups in AWS IoT Jobs?","expect_status":"ok","min_sources":1}
+{"id":"IOT_008","query":"What is the difference between QUEUED and IN_PROGRESS in job executions?","expect_status":"ok","min_sources":1}
+{"id":"IOT_009","query":"What is a step timer vs an in-progress timer in AWS IoT Jobs timeouts?","expect_status":"ok","min_sources":1}
+{"id":"IOT_010","query":"What does SUCCEEDED mean for a job execution?","expect_status":"ok","min_sources":1}
+{"id":"IOTJ_011","query":"What is a job target in AWS IoT Jobs?","expect_status":"ok","min_sources":1}
+{"id":"IOTJ_012","query":"What is a job template in AWS IoT Jobs?","expect_status":"ok","min_sources":1}
+{"id":"IOTJ_013","query":"What is a rollout configuration in AWS IoT Jobs?","expect_status":"ok","min_sources":1}
+{"id":"IOTJ_014","query":"What does CANCELED mean for a job execution?","expect_status":"ok","min_sources":1}
+{"id":"IOTJ_015","query":"Difference between a job and a job execution?","expect_status":"ok","min_sources":1}
+{"id":"IOTJ_016","query":"How can you stop a running AWS IoT Job?","expect_status":"ok","min_sources":1}
+
+{"id":"MQTT_001","query":"What is the high-level definition and purpose of the MQTT protocol according to the standards?","expect_status":"ok","min_sources":1,"notes":"often triggers mqtt spec vs AWS guide ambiguity"}
+{"id":"MQTT_002","query":"According to MQTT v3.1.1, what kind of messaging model does MQTT use?","expect_status":"ok","min_sources":1}
+{"id":"MQTT_003","query":"According to MQTT v3.1.1, what is the publish/subscribe relationship between clients and topics?","expect_status":"ok","min_sources":1}
+{"id":"MQTT_004","query":"In AWS IoT Core, what is an MQTT topic?","expect_status":"ok","min_sources":1}
+{"id":"MQTT_005","query":"In AWS IoT Core, how are messages routed using MQTT topics?","expect_status":"ok","min_sources":1}
+{"id":"MQTT_006","query":"According to MQTT v3.1.1, what is the role of the Server?","expect_status":"ok","min_sources":1}
+{"id":"MQTT_007","query":"According to MQTT v3.1.1, what is a Client?","expect_status":"ok","min_sources":1}
+{"id":"MQTT_008","query":"According to MQTT v3.1.1, what is a Topic Name?","expect_status":"ok","min_sources":1}
+{"id":"MQTT_009","query":"According to MQTT v3.1.1, what is a Topic Filter?","expect_status":"ok","min_sources":1}
+{"id":"MQTT_010","query":"According to MQTT v3.1.1, what does QoS mean at a high level?","expect_status":"ok","min_sources":1}
+{"id":"AWS_MQTT_006","query":"In AWS IoT Core, what protocols are supported for device communication?","expect_status":"ok","min_sources":1}
+{"id":"AWS_MQTT_007","query":"In AWS IoT Core, what is an MQTT topic filter?","expect_status":"ok","min_sources":1}
+{"id":"AWS_MQTT_008","query":"In AWS IoT Core, what is the message broker responsible for?","expect_status":"ok","min_sources":1}
+
+{"id":"MIX_001","query":"Compare MQTT described by AWS IoT Core vs MQTT v3.1.1 standard: what overlaps in purpose?","expect_status":"ok","min_sources":1,"notes":"likely ambiguity across iot-dg and mqtt spec"}
+{"id":"MIX_002","query":"What does the AWS IoT Core Developer Guide say MQTT is designed for?","expect_status":"ok","min_sources":1}
+{"id":"MIX_003","query":"What does the MQTT v3.1.1 spec say about being lightweight and easy to implement?","expect_status":"ok","min_sources":1}
+{"id":"MIX_004","query":"Compare MQTT topic (AWS IoT Core) vs topic name (MQTT v3.1.1): what is the relationship?","expect_status":"ok","min_sources":1,"notes":"cross-source synthesis"}
+{"id":"MIX_005","query":"Does AWS IoT Core fully comply with MQTT v3.1.1? If not, where are differences documented?","expect_status":"ok","min_sources":1,"notes":"should retrieve AWS differences section"}
+{"id":"MIX_006","query":"Compare publish/subscribe concept in MQTT spec vs AWS IoT Core messaging: what is the same idea?","expect_status":"ok","min_sources":1}
+
+{"id":"WP_001","query":"According to the IoT white paper, what is IoT at a high level?","expect_status":"ok","min_sources":1}
+{"id":"WP_002","query":"According to the IoT white paper, what are common IoT system components?","expect_status":"ok","min_sources":1}
+{"id":"WP_003","query":"According to the IoT white paper, what are common IoT challenges or risks?","expect_status":"ok","min_sources":1}
+{"id":"WP_004","query":"According to the IoT white paper, what are common security concerns in IoT?","expect_status":"ok","min_sources":1}
+{"id":"WP_005","query":"According to the IoT white paper, what is meant by 'things' in IoT?","expect_status":"ok","min_sources":1}
+{"id":"WP_006","query":"According to the IoT white paper, what is the challenge of interoperability?","expect_status":"ok","min_sources":1}
+
+{"id":"EDGE_001","query":"resend job document","expect_status":"ok","notes":"you previously saw refuse; keep as regression check"}
+{"id":"EDGE_002","query":"threshold percentage of devices report failure","expect_status":"ok","notes":"you previously saw refuse; keep as regression check"}
+{"id":"EDGE_003","query":"job execution failure","expect_status":"ok","min_sources":1}
+{"id":"EDGE_004","query":"job timeout","expect_status":"ok","min_sources":1}
+{"id":"EDGE_005","query":"when do aws iot devices generate errors","expect_status":"ok","min_sources":1}
+{"id":"IOTJ_EDGE_006","query":"job retry behavior","expect_status":"ok","min_sources":1,"notes":"short/underspecified; should still retrieve"}
+{"id":"IOTJ_EDGE_007","query":"in-progress timer","expect_status":"ok","min_sources":1,"notes":"short query regression"}
+{"id":"IOTJ_EDGE_008","query":"step timer","expect_status":"ok","min_sources":1,"notes":"short query regression"}
+{"id":"IOTJ_EDGE_009","query":"job rollout rate","expect_status":"ok","min_sources":1,"notes":"short query regression"}

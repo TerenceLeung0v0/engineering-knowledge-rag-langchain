@@ -10,10 +10,10 @@ and evaluation**, rather than open-domain question answering.
 
 ## Scope
 
-- Domain-specific RAG (IoT / MQTT / AWS IoT / engineering docs)
+- Domain-specific RAG (IoT / MQTT / AWS IoT / engineering documentation)
 - Answer **only when supported by retrieved documents**
 - Explicit refusal for out-of-scope or unsupported questions
-- Ambiguity surfaced to user instead of hallucinated answers
+- Ambiguity surfaced to the user instead of hallucinated answers
 
 ---
 
@@ -38,10 +38,13 @@ and evaluation**, rather than open-domain question answering.
   - absolute gate (hard and soft)
   - density gate
   - confidence gap gate
-- Ambiguous retrieval handling with selectable options
+- Ambiguous retrieval handling with explicit selectable options
 - Strict refusal policy when no evidence is available
-- Output hygiene pipeline (labels, placeholders, empty sections)
-- Interactive CLI for inspection and debugging
+- Output hygiene pipeline enforcement:
+  - no empty answers
+  - explicit refusal reasons
+  - structured ambiguity output
+- CLI-friendly and scriptable evaluation workflow
 
 ---
 
@@ -49,12 +52,13 @@ and evaluation**, rather than open-domain question answering.
 
 - [x] Document ingestion & vectorstore
 - [x] Retrieval gating logic
-- [x] Ambiguous option construction
-- [x] Output hygiene
+- [x] Ambiguous retrieval handling (logic implemented; stress cases pending)
+- [x] Output hygiene enforcement
 - [x] CLI interface
-- [x] Evaluation harness (mini set) + baseline report
-- [x] Baseline stabilized (31/31 pass, 100%)
-- [ ] Expand QA set + stricter ambiguity/refusal policy
+- [x] Evaluation harness (mini set) + baseline report [`v0.1.0` (~77% pass rate)]
+- [x] Baseline stabilized (31/31 pass, 100%) [`v0.2.0` (100% pass rate)]
+- [x] QA set expanded (31 -> 60 curated cases) [`v0.3.0` (100% pass rate)]
+- [ ] Ambiguity stress-testing with larger document corpus
 - [ ] LoRA fine-tuning (planned, not started)
 
 ---
@@ -62,32 +66,49 @@ and evaluation**, rather than open-domain question answering.
 ## Evaluation
 
 ### Current Results
-- Total test cases: 31
-- Passed: 31
-- Pass rate: 100%
+- Total test cases: **60**
+- Passed: **60**
+- Pass rate: **100%**
 
 ### What is evaluated
-- status_ok
-  Expected retrieval outcome: ok / refuse / ambiguous
-- source_ok
+- **status_ok**
+  Expected retrieval outcome: `ok` / `refuse` / `ambiguous`
+- **source_ok**
   Expected source documents appear in retrieved evidence if applicable
-- hygiene_ok
+- **hygiene_ok**
   Outcome correctness rules:
   - no hallucinated answers
-  - proper refusal text
-  - ambiguity produces selectable options
+  - refusal must include reason
+  - answers must not be empty
+  - ambiguity must be explicit if applicable
+
+A case is considered **passed only if all checks pass**.
 
 ### Running evaluation
 ```bash
 python scripts/run_eval.py --qa data/curated_qa/<yourTest.jsonl> --out reports/<yourEval.jsonl>
+```
 
-Example
+Example:
+```bash
 python scripts/run_eval.py --qa data/curated_qa/qa_mini_v0.jsonl --out reports/eval_mini_v0.jsonl
+```
+
+Strict mode (non-zero exit unless 100% pass):
+```bash
+python scripts/run_eval.py --qa data/curated_qa/<yourTest.jsonl> --out reports/<yourEval.jsonl> --strict
+```
+
+### Convenience Scripts
+```bash
+make eval-mini
+make eval-mini-strict
 ```
 
 The evaluation is deterministic and intended for:
 - threshold tuning
 - ambiguity policy refinement
+- regression detection
 
 ---
 
@@ -120,6 +141,9 @@ python scripts/download_docs.py
 - This system **does not answer general knowledge questions**
 - If no relevant documents are retrieved, the system will refuse
 - Ambiguity is treated as a first-class output, not an error
+- Current QA sets are curated to validate refusal and correctness paths
+- True ambiguity is expected to emerge naturally as the document corpus expands
+- Absence of ambiguous cases reflects current dataset design, not a system limitation
 - LoRA is intentionally postponed until retrieval + evaluation stabilize
 
 ---
