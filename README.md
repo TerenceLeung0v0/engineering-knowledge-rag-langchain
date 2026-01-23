@@ -20,7 +20,7 @@ and evaluation**, rather than open-domain question answering.
 ## Key Design Goals
 
 - Deterministic retrieval behavior
-- Explicit retrieval gating (L2 distance–based)
+- Explicit, multi-stage retrieval gating and guardrails
 - No hallucination by construction
 - Clear separation between:
   - retrieval
@@ -38,6 +38,9 @@ and evaluation**, rather than open-domain question answering.
   - absolute gate (hard and soft)
   - density gate
   - confidence gap gate
+- Out-of-domain (OOD) gate with explicit allow / deny patterns
+- Coverage gate to ensure retrieved documents actually support queried entities
+- Injection-aware entity tagging at ingestion time
 - Ambiguous retrieval handling with explicit selectable options
 - Strict refusal policy when no evidence is available
 - Output hygiene pipeline enforcement:
@@ -52,13 +55,18 @@ and evaluation**, rather than open-domain question answering.
 
 - [x] Document ingestion & vectorstore
 - [x] Retrieval gating logic
-- [x] Ambiguous retrieval handling (logic implemented; stress cases pending)
+- [x] Out-of-domain (OOD) gating
+- [x] Coverage gating (entity-aware)
+- [x] Injection-time entity tagging
+- [x] Ambiguous retrieval handling (auto-resolve + user-selectable paths)
 - [x] Output hygiene enforcement
 - [x] CLI interface
 - [x] Evaluation harness (mini set) + baseline report [`v0.1.0` (~77% pass rate)]
 - [x] Baseline stabilized (31/31 pass, 100%) [`v0.2.0` (100% pass rate)]
 - [x] QA set expanded (31 -> 60 curated cases) [`v0.3.0` (100% pass rate)]
+- [x] Guardrails milestone (OOD + coverage + tagging) [`v0.4.0`]
 - [ ] Ambiguity stress-testing with larger document corpus
+- [ ] Non-PDF ingestion (HTML / Markdown)
 - [ ] LoRA fine-tuning (planned, not started)
 
 ---
@@ -66,9 +74,13 @@ and evaluation**, rather than open-domain question answering.
 ## Evaluation
 
 ### Current Results
-- Total test cases: **60**
-- Passed: **60**
-- Pass rate: **100%**
+| Dataset            | Pass Rate  |
+|--------------------|------------|
+| eval-dev           | **100%**   |
+| eval-mini-strict   | **88.33%** |
+
+- The drop in `eval-mini-strict` is expected and reflects stricter OOD and coverage guardrails introduced in v0.4.0. Several previously accepted queries are now correctly refused due to missing document coverage.
+
 
 ### What is evaluated
 - **status_ok**
@@ -91,7 +103,7 @@ python scripts/run_eval.py --qa data/curated_qa/<yourTest.jsonl> --out reports/<
 
 Example:
 ```bash
-python scripts/run_eval.py --qa data/curated_qa/qa_mini_v0.jsonl --out reports/eval_mini_v0.jsonl
+python scripts/run_eval.py --qa data/curated_qa/qa_mini_v1.jsonl --out reports/eval_mini_v1.jsonl
 ```
 
 Strict mode (non-zero exit unless 100% pass):
@@ -103,10 +115,13 @@ python scripts/run_eval.py --qa data/curated_qa/<yourTest.jsonl> --out reports/<
 ```bash
 make eval-mini
 make eval-mini-strict
+make eval-dev
+make eval-dev-strict
 ```
 
 The evaluation is deterministic and intended for:
 - threshold tuning
+- guardrail policy refinement
 - ambiguity policy refinement
 - regression detection
 
@@ -145,6 +160,7 @@ python scripts/download_docs.py
 - True ambiguity is expected to emerge naturally as the document corpus expands
 - Absence of ambiguous cases reflects current dataset design, not a system limitation
 - LoRA is intentionally postponed until retrieval + evaluation stabilize
+- Refusal is treated as a correct outcome when document coverage is insufficient
 
 ---
 

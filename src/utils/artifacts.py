@@ -1,4 +1,4 @@
-from typing import Any, Iterable
+from typing import Any, Iterable, Iterator
 from pathlib import Path
 
 from src.utils.files import is_file_non_empty
@@ -24,15 +24,15 @@ def save_jsonl(
 
     if path.exists() and not overwrite:
         raise FileExistsError(f"File already exists: {path}. Set overwrite=True to overwrite.")
-    
+
     path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     with path.open("w", encoding="utf-8") as f:
         for row in rows:
             f.write(json.dumps(row, ensure_ascii=False, default=_path_serializer) + "\n")
-            
+
     info("artifacts", f"Saved to {path}")
-    
+
     return path
     
 def append_jsonl(
@@ -44,26 +44,36 @@ def append_jsonl(
     
     with path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(row, ensure_ascii=False, default=_path_serializer) + "\n")
-        
+
     info("artifacts", f"Appended to {path}")
-    
+
     return path
 
 def load_jsonl(path: Path | str) -> list[dict[str, Any]]:
     path = Path(path)
-    
+
     if not is_file_non_empty(path): 
         raise FileNotFoundError(path)
-        
+
     rows: list[dict[str, Any]] = []
-    
+
     with path.open("r", encoding="utf-8") as file:
         for line in file:
             line = line.strip()
-            
+
             if not line:
                 continue
-            
+
             rows.append(json.loads(line))
-    
     return rows
+
+def stream_jsonl(path: Path | str) -> Iterator[dict]:
+    path = Path(path)
+    
+    if not is_file_non_empty(path):
+        raise FileNotFoundError(path)
+
+    with path.open("r", encoding="utf-8") as file:
+        for line in file:
+            if stripped := line.strip():
+                yield json.loads(stripped)

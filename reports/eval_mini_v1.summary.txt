@@ -1,5 +1,12 @@
 Total: 60
-Passed: 60
-Pass rate: 100.00%
+Passed: 53
+Pass rate: 88.33%
 
-Failures: none
+Failures:
+- IOT_007: status(ok->refuse), sources
+- IOT_008: status(ok->refuse), sources
+- MIX_006: status(ok->refuse), sources
+- EDGE_002: status(ok->refuse)
+- IOTJ_EDGE_006: status(ok->refuse), sources
+- IOTJ_EDGE_007: status(ok->refuse), sources
+- IOTJ_EDGE_008: status(ok->refuse), sources

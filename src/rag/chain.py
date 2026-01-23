@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any
+from typing import Any, Callable
 
 from langchain_community.vectorstores import FAISS
 from langchain_core.runnables import Runnable, RunnableLambda, RunnablePassthrough
@@ -18,6 +18,9 @@ from src.rag.gating import GateConfig
 from src.rag.retriever import build_retrieve_and_gate_l2
 from src.rag.policy import refuse_if_no_docs, REFUSAL_TEXT
 from src.rag.ambiguity import AmbiguityConfig
+from src.rag.ood import OODConfig, ood_gate
+from src.rag.coverage import CoverageConfig, coverage_gate
+from src.schemas import RetrievalState
 from src.utils.diagnostics import build_debug_logger
 
 _dbg = build_debug_logger(
@@ -69,9 +72,29 @@ def _format_final_output(state: dict[str, Any]) -> dict[str, Any]:
         "selected_option": state.get("selected_option", None)
     }
 
+def _guard_retrieval(
+    state: dict[str, Any],
+    *, retrieve_and_gate: Callable[[RetrievalState], RetrievalState]
+) -> dict[str, Any]:
+    if state.get("skip_llm", False):
+        return state
+
+    return retrieve_and_gate(state)
+
+def _normalize_state(state: Any) -> dict[str, Any]:
+    if isinstance(state, dict):
+        text = state.get("input") or state.get("query") or state.get("question")
+        return {
+            **state,
+            "input": str(text) if text is not None else ""
+        }
+    return {"input": str(state)}
+
 def build_rag_chain() -> Runnable:
     max_chars = int(PROMPT_CONFIG["max_chars_per_chunk"])
     gate_cfg = GateConfig.from_dict(RETRIEVAL_CONFIG)
+    ood_cfg = OODConfig.from_dict(RETRIEVAL_CONFIG.get("ood"))
+    cvg_cfg = CoverageConfig.from_dict(RETRIEVAL_CONFIG.get("coverage"))
     max_options=int(RETRIEVAL_CONFIG["max_options"])
     
     fetch_k = _calculate_safe_fetch_k(
@@ -103,14 +126,20 @@ def build_rag_chain() -> Runnable:
     llm = build_llm(LLM_CONFIG)
 
     chain = (
-        # Retrieve docs
-        RunnableLambda(retrieve_and_gate)
+        # Guardrail for dict-shape input
+        RunnableLambda(_normalize_state)
+        # OOD gate before retrieval
+        | RunnableLambda(lambda s: ood_gate(s, cfg=ood_cfg))
+        # Retrieve docs or short-circuits on refusal
+        | RunnableLambda(lambda s: _guard_retrieval(s, retrieve_and_gate=retrieve_and_gate))
+        # Coverage gate
+        | RunnableLambda(lambda s: coverage_gate(s, cfg=cvg_cfg))
         # Decide refuse early
         | RunnableLambda(refuse_if_no_docs)        
         # Format docs into context string
         | RunnablePassthrough.assign(
             context=lambda x: format_docs_for_prompt(
-                x["docs"],
+                x.get("docs", []),
                 max_chars_per_chunk=max_chars
             )
         )

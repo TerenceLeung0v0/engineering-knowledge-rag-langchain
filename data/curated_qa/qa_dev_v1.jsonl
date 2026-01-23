@@ -1,0 +1,28 @@
+{"id":"DEV_IOT_001","query":"how does aws iot jobs work overall","expect_status":"ambiguous","min_sources":0,"notes":"Real-world: colloquial + broad; allow ambiguous if multiple doc clusters compete. In interactive mode should ask user to pick; in eval we tolerate ambiguous."}
+{"id":"DEV_IOT_002","query":"job execution lifecycle","expect_status":"ok","min_sources":1,"notes":"underspecified but in-domain; should retrieve AWS IoT Jobs execution lifecycle content"}
+{"id":"DEV_IOT_003","query":"when does an aws iot job fail","expect_status":"ok","min_sources":1,"notes":"should retrieve job failure states / status transitions based on docs"}
+{"id":"DEV_IOT_004","query":"difference between job document and job execution","expect_status":"ok","min_sources":1,"notes":"should explain doc vs execution (device-level) from provided docs"}
+{"id":"DEV_IOT_005","query":"can a device reject a job","expect_status":"ok","min_sources":1,"notes":"should cover device-side accept/reject + status reporting if present in docs"}
+{"id":"DEV_IOT_006","query":"how to stop an iot job that is running","expect_status":"ok","min_sources":1,"notes":"should cover cancel/stop job execution behavior per docs"}
+
+{"id":"DEV_MQTT_001","query":"what problem does mqtt solve","expect_status":"ok","min_sources":1,"notes":"high-level purpose, spec-oriented; must be grounded in corpus"}
+{"id":"DEV_MQTT_002","query":"mqtt pub sub explained","expect_status":"ok","min_sources":1,"notes":"basic publish/subscribe explanation grounded in docs"}
+{"id":"DEV_MQTT_003","query":"mqtt broker vs client","expect_status":"ok","min_sources":1,"notes":"broker/client roles grounded in docs"}
+{"id":"DEV_MQTT_004","query":"what does qos mean in mqtt","expect_status":"ok","min_sources":1,"notes":"QoS semantics from docs"}
+{"id":"DEV_MQTT_005","query":"mqtt topics wildcard","expect_status":"ok","min_sources":1,"notes":"topic filters / wildcards from docs"}
+
+{"id":"DEV_AWS_MQTT_001","query":"does aws iot support mqtt","expect_status":"ok","min_sources":1,"notes":"AWS IoT Core MQTT support from docs"}
+{"id":"DEV_AWS_MQTT_002","query":"how aws iot routes mqtt messages","expect_status":"ok","min_sources":1,"notes":"message routing rules grounded in AWS IoT docs in corpus"}
+{"id":"DEV_AWS_MQTT_003","query":"difference between mqtt topic and topic filter in aws","expect_status":"ok","min_sources":1,"notes":"must explain AWS IoT topic filter semantics if present; otherwise refuse due to no docs"}
+
+{"id":"DEV_EDGE_001","query":"job timeout behavior","expect_status":"ok","min_sources":1,"notes":"short edge query; should still retrieve job timeout semantics if present in corpus; otherwise refuse due to no relevant docs"}
+{"id":"DEV_EDGE_002","query":"what happens if device never reports job status","expect_status":"ok","min_sources":1,"notes":"edge-case behavior; must be grounded in corpus; refuse if no docs"}
+{"id":"DEV_EDGE_003","query":"job rollout speed","expect_status":"ok","min_sources":1,"notes":"underspecified rollout config reference; must be grounded; refuse if no docs"}
+
+{"id":"DEV_MIX_001","query":"is mqtt lightweight","expect_status":"ok","min_sources":1,"notes":"vague; should answer only what corpus supports"}
+{"id":"DEV_MIX_002","query":"aws iot mqtt compliance","expect_status":"ok","min_sources":1,"notes":"should retrieve AWS doc discussing MQTT compliance/differences if present; refuse if no docs"}
+{"id":"DEV_MIX_003","query":"compare aws iot mqtt and mqtt standard","expect_status":"ok","min_sources":1,"notes":"comparison allowed only where docs support; must not invent extra details"}
+
+{"id":"DEV_OOD_001","query":"explain http vs mqtt","expect_status":"refuse","notes":"Tricky: query contains MQTT keyword (passes OOD), but should refuse at retrieval/policy if corpus lacks HTTP material; must not hallucinate HTTP details."}
+{"id":"DEV_OOD_002","query":"kafka vs mqtt","expect_status":"refuse","notes":"Tricky: query contains MQTT keyword (passes OOD), but should refuse at retrieval/policy if corpus lacks Kafka material; must not hallucinate Kafka details."}
+{"id":"DEV_OOD_003","query":"iot device firmware update best practice","expect_status":"refuse","notes":"Conceptually in IoT domain, but should refuse unless corpus explicitly contains firmware update/OTA best practices; must not answer from general knowledge."}

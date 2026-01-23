@@ -10,13 +10,14 @@ from langchain_community.vectorstores import FAISS
 from src.config import (
     RAW_DOCS_DIR, VECTORSTORE_DIR,
     TEXT_SPLITTING_CONFIG, EMBEDDING_CONFIG,
-    DEBUG_CONFIG, PROJECT_ROOT
+    DEBUG_CONFIG, PROJECT_ROOT, RETRIEVAL_CONFIG
 )
 
 from src.utils.text import clean_text
-from src.rag.embeddings import build_embeddings
 from src.utils.diagnostics import build_debug_logger, warn as _warn
-from src.rag.catalog import resolve_doc_tags, enrich_metadata
+from src.rag.embeddings import build_embeddings
+from src.rag.catalog import enrich_metadata
+from src.ingest.annotate import annotate_docs
 
 _debug_diag = build_debug_logger(
     cfg=DEBUG_CONFIG,
@@ -154,6 +155,11 @@ def build_vectorstore() -> IngestStats:
     chunks = splitter.split_documents(docs)
     chunks = _clean_documents(chunks)
     chunks = _enrich_chunks_metadata(chunks)
+
+    chunks = annotate_docs(
+        chunks,
+        cfg_entities=RETRIEVAL_CONFIG.get("coverage")
+    )
 
     _emit_ingest_diagnostics(chunks)
     

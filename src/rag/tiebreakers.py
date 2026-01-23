@@ -204,4 +204,3 @@ def pick_group_by_anchor_content(
         second_sim=second_sim,
         sims=sims
     )
-    
