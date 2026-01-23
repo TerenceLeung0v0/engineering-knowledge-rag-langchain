@@ -48,7 +48,3 @@ class RetrievalState(TypedDict):
     selected_option: NotRequired[int | None]
 
     skip_llm: NotRequired[bool]
-    
-
-
-

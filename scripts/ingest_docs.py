@@ -1,7 +1,7 @@
 from __future__ import annotations
 from src.startup_checks import ensure_project_dirs
 from src.config import VECTORSTORE_DIR, DEBUG_CONFIG
-from src.rag.ingest import build_vectorstore
+from src.ingest.ingest import build_vectorstore
 from src.utils.files import empty_directory_contents
 from src.utils.diagnostics import build_debug_logger 
 

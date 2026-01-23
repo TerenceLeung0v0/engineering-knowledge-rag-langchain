@@ -9,6 +9,7 @@ from src.eval.reporting import summarize
 from src.rag.chain import build_rag_chain
 
 import argparse
+import time
 
 def _as_dict(r: Any) -> dict[str, Any]:
     # EvalResult is dataclass (frozen), so __dict__ works
@@ -27,6 +28,7 @@ def main() -> int:
     out_path = Path(args.out)
     summary_path = out_path.with_suffix(".summary.txt")
 
+    t0 = time.perf_counter()
     rows = read_jsonl(qa_path)
     cases = validate_cases([parse_case(x) for x in rows])
 
@@ -57,6 +59,9 @@ def main() -> int:
     print(f"[OK] Wrote: {out_path}")
     print(f"[OK] Wrote: {summary_path}")
     print(f"Pass rate: {rate:.2f}%")
+
+    dt = time.perf_counter() - t0
+    print(f"[EVAL] Total time taken: {dt} seconds")
 
     if args.strict and (total == 0 or passed != total):
         return 1

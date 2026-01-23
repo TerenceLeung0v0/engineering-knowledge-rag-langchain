@@ -11,6 +11,9 @@ def refuse_if_no_docs(state: RetrievalState) -> RetrievalState:
     """
     Ensure the state has valid docs; otherwise short-circuit the chain.
     """
+    if state.get("skip_llm", False):
+        return state
+
     docs = state.get("docs", [])
     status = state.get("status")
     options = state.get("options")

@@ -1,0 +1,5 @@
+Total: 23
+Passed: 23
+Pass rate: 100.00%
+
+Failures: none
