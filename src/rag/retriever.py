@@ -72,6 +72,75 @@ def _is_from_same_file(
 
     return Path(source_a).name == Path(source_b).name
 
+def _is_pattern_match(
+    query: str,
+    *,
+    pattern_attr: str,
+    cfg: AmbiguityConfig,
+    require_keep_ambiguous: bool=False
+) -> bool:
+    if require_keep_ambiguous and not cfg.keep_ambiguous_for_generic_queries:
+        return False
+    
+    q = (query or "").strip()
+    if not q:
+        return False
+
+    patterns = getattr(cfg, pattern_attr, None) or ()
+    return any(p.search(q) for p in patterns)
+
+def _is_generic_query(
+    query: str,
+    cfg: AmbiguityConfig
+) -> bool:
+    return _is_pattern_match(
+        query,
+        pattern_attr="generic_query_patterns",
+        cfg=cfg,
+        require_keep_ambiguous=True
+    )
+
+def _is_facet_query(
+    query: str,
+    cfg: AmbiguityConfig
+) -> bool:
+    return _is_pattern_match(
+        query,
+        pattern_attr="facet_query_patterns",
+        cfg=cfg,
+        require_keep_ambiguous=False
+    )
+
+def _is_generic_underspecified(
+    query: str,
+    cfg: AmbiguityConfig
+) -> bool:
+    if not _is_generic_query(query, cfg):
+        _dbg_ambiguous(f"_is_generic_query = False")
+        return False
+
+    if _is_facet_query(query, cfg):
+        _dbg_ambiguous(f"_is_facet_query=True -> underspecified=False")
+        return False
+
+    if cfg.entity_extractor is None:
+        _dbg_ambiguous(f"entity_extractor=None -> underspecified=True")
+        return True
+
+    entities = cfg.entity_extractor.extract(query)
+    underspecified = not bool(entities)
+    _dbg_ambiguous(f"_is_generic_underspecified = {underspecified}")
+    return underspecified
+
+def _is_overview_query(
+    query: str,
+    cfg: AmbiguityConfig
+) -> bool:
+    if not _is_generic_query(query, cfg):
+        return False
+    
+    return not _is_facet_query(query, cfg)
+
 def _get_source_info(doc: Document) -> tuple[str, str]:
     meta = doc.metadata or {}
     filename = Path(meta.get("source", "unknown")).name
@@ -83,6 +152,16 @@ def _doc_signature(doc: Document) -> tuple[str, str]:
     filename, page = _get_source_info(doc)
 
     return filename, page
+
+def _doc_entities(doc: Document) -> set[str]:
+    meta = doc.metadata or {}
+    entities = meta.get("entities", [])
+    outs: set[str] = set()
+    if isinstance(entities, (list, tuple, set)):
+        for entity in entities:
+            if isinstance(entity, str) and entity.strip():
+                outs.add(entity.strip())
+    return outs
 
 def _option_signature(option: RetrievalOption) -> tuple[tuple[str, str], ...]:
     signature = sorted((src.filename, str(src.page)) for src in option.sources)
@@ -241,6 +320,168 @@ def _resolve_by_groups_score_gap(
 
     return None
 
+def _extract_group_entities(group: list[ScoredDocument]) -> set[str]:
+    outs: set[str] = set()
+    for sd in group:
+        outs.update(_doc_entities(sd.doc))
+
+    return outs
+
+def _resolve_by_entity_coverage(
+    groups: list[list[ScoredDocument]],
+    *,
+    query: str,
+    cfg: AmbiguityConfig
+) -> list[list[ScoredDocument]] | None:
+    if not cfg.enable_entity_resolve:
+        _dbg_ambiguous("Entity-resolve is disabled")
+        return None
+
+    if cfg.entity_extractor is None:
+        _dbg_ambiguous("Entity-extractor is None")
+        return None
+
+    entities_in_query = cfg.entity_extractor.extract(query)
+    if not entities_in_query:
+        _dbg_ambiguous("No entities found in query")
+        return None
+
+    query_id = set(entities_in_query)
+    scored_groups: list[tuple[int, int, float]] = []    # idx, hit, best_l2
+    
+    for idx, group in enumerate(groups):
+        if not group:
+            continue
+        group_entities = _extract_group_entities(group)
+        hit = len(query_id.intersection(group_entities))
+        best_l2 = float(group[0].score)
+        scored_groups.append((idx, hit, best_l2))
+
+    if not scored_groups:
+        return None
+    
+    max_hit = max(hit for (_, hit, _) in scored_groups)
+    _dbg_ambiguous(
+        f"Entity-resolve: entities_in_query = {sorted(query_id)}, "
+        f"group_hits={[(i, h) for (i, h, _) in scored_groups]}, max_hit={max_hit}"
+    )
+    
+    if max_hit <= 0:
+        return None
+
+    winners = [idx for (idx, hit, _) in scored_groups if hit==max_hit]
+    if cfg.require_full_entity_coverage and max_hit < len(query_id):
+        _dbg_ambiguous(f"Entity-resolve: Full coverage required but max_hit({max_hit}) < Required({len(query_id)})")
+        return None
+
+    if len(winners) == 1:
+        return [groups[winners[0]]]
+
+    _dbg_ambiguous(f"Entity-resolve tied winners: {winners}")
+    
+    ranked: list[tuple[int, int, int, int, float]] = []
+    for idx in winners:
+        g = groups[idx]
+        anchor_hits = _anchor_entity_hits(g, query_id)
+        docs_hits = _docs_entity_hits(g, query_id)
+        group_hits = _group_entity_hits(g, query_id)
+        best_l2 = float(g[0].score) if g else 1e18
+        ranked.append((idx, anchor_hits, docs_hits, group_hits, best_l2))
+
+    _dbg_ambiguous(
+        "Entity-resolve tie-rank: "
+        + ", ".join(
+            f"(idx={i}, anchor_hits={ah}, docs_hits={dh}, group_hits={gh}, best_l2={l2:.4f})"
+            for (i, ah, dh, gh, l2) in ranked
+        )
+    )
+
+    ranked.sort(key=lambda t: (-t[1], -t[2], -t[3], t[4]))
+
+    if len(ranked) >= 2:
+        top = ranked[0]
+        second = ranked[1]
+        top_cmp = (top[1], top[2], top[3], -top[4])
+        second_cmp = (second[1], second[2], second[3], -second[4])
+
+        if top_cmp > second_cmp:
+            _dbg_ambiguous(f"Entity-resolve collapsed winner: idx={top[0]}, key={top_cmp} > {second_cmp}")
+            return [groups[top[0]]]
+
+    narrowed = [groups[i] for (i, _, _, _, _) in ranked]
+    narrowed.sort(key=lambda g: float(g[0].score) if g else 1e18)
+    
+    return narrowed
+
+def _augment_docs_to_cover_entities(
+    *,
+    chosen_docs: list[Document],
+    candidates: list[ScoredDocument],
+    query_entities: set[str],
+    final_k: int
+) -> list[Document]:
+    """
+    Add extra docs to fill missing entities.
+    """
+    if not query_entities or final_k <= 0:
+        if final_k <= 0:
+            _dbg_ambiguous(f"Input final_k({final_k}) <= 0")
+        else:
+            _dbg_ambiguous("query_entities are empty")
+        return chosen_docs[: final_k]
+
+    picked: list[Document] = []
+    seen = set()
+    covered = set()
+    
+    for doc in chosen_docs:
+        picked.append(doc)
+        seen.add(_doc_signature(doc))
+        covered |= _doc_entities(doc)
+
+    missing = set(query_entities) - covered
+    if not missing:
+        _dbg_ambiguous("No missing entities")
+        return picked[: final_k]
+
+    if len(picked) >= final_k:
+        reserve = min(final_k - 1, max(1, len(missing)))
+        keep_n = max(1, final_k - reserve)
+        trimmed = picked[: keep_n]
+        
+        picked = trimmed
+        seen = {_doc_signature(doc) for doc in picked}
+        covered.clear()
+        for doc in picked:
+            covered |= _doc_entities(doc)
+        missing = set(query_entities) - covered
+        _dbg_ambiguous(f"Augment trim: keep_n={keep_n}, covered={sorted(covered)}, missing={sorted(missing)}")
+
+    _dbg_ambiguous(f"Augment start: missing={sorted(missing)}, candidates={len(candidates)}")
+    for sd in candidates:
+        if len(picked) >= final_k:
+            break
+        doc = sd.doc
+        sig = _doc_signature(doc)
+        if sig in seen:
+            continue
+        doc_entities = _doc_entities(doc)
+        if not (missing & doc_entities):
+            continue
+
+        picked.append(doc)
+        seen.add(sig)
+        covered |= doc_entities
+        missing = set(query_entities) - covered
+        if not missing:
+            break
+
+    _dbg_ambiguous(
+        f"Augment: needed={sorted(query_entities)}, covered={sorted(covered)}, "
+        f"missing={sorted(set(query_entities)-covered)}, picked={len(picked)}/{final_k}"
+    )
+    return picked[: final_k]
+
 def _tiebreak_signature_embedding(
     groups: list[list[ScoredDocument]],
     *,
@@ -305,7 +546,7 @@ def _tiebreak_anchor_embedding(
     Expects groups are non-empty and sorted.
     """
     if not cfg.enable_anchor_tiebreak:
-        _dbg_ambiguous("Tie-breaking[Anchor] is disaled")
+        _dbg_ambiguous("Tie-breaking[Anchor] is disabled")
         return None
 
     if len(groups) < 2:
@@ -410,6 +651,62 @@ def _prepare_retrieval_options(
 
     return _deduplicate_options(options)
 
+def _ensure_entities_coverage(
+    *,
+    scored: list[ScoredDocument],
+    docs: list[Document],
+    query: str,
+    final_k: int,
+    cfg: AmbiguityConfig
+) -> list[Document]:
+    if cfg.entity_extractor is not None:
+        query_id = set(cfg.entity_extractor.extract(query))
+        if query_id:
+            return _augment_docs_to_cover_entities(
+                chosen_docs=docs,
+                candidates=scored,
+                query_entities=query_id,
+                final_k=final_k
+            )
+
+    return docs
+
+def _docs_entity_hits(
+    group: list[ScoredDocument],
+    query_entities: set[str]
+) -> int:
+    """
+    Higher means the group is more related to the entities.
+    """
+    if not group or not query_entities:
+        return 0
+    hit = 0
+    for sd in group:
+        if _doc_entities(sd.doc) & query_entities:
+            hit += 1
+    return hit
+
+def _anchor_entity_hits(
+    group: list[ScoredDocument],
+    query_entities: set[str]
+) -> int:
+    """
+    Higher means the group anchor is more directly relevant.
+    """
+    if not group or not query_entities:
+        return 0
+    anchor_entities = _doc_entities(group[0].doc)
+    return len(anchor_entities & query_entities)
+
+def _group_entity_hits(
+    group: list[ScoredDocument],
+    query_entities: set[str]
+) -> int:
+    if not group or not query_entities:
+        return 0
+    entities = _extract_group_entities(group)
+    return len(entities & query_entities)
+
 def _resolve_tag_ambiguity(
     scored: list[ScoredDocument],
     *,
@@ -424,35 +721,91 @@ def _resolve_tag_ambiguity(
     if not scored:
         return [], False, []
 
+    _dbg_ambiguous(f"Tag ambiguity start: scored_len={len(scored)}, strict_sig={cfg.strict_sig}")
     groups = _group_scored_by_tag_signature(scored, strict=cfg.strict_sig)
     effective_k = max(1, final_k)
 
+    # Overview (Force)
+    if len(groups) >= 2 and _is_overview_query(query, cfg):
+        options = _prepare_retrieval_options(
+            groups=groups,
+            cfg=cfg,
+            effective_k=effective_k
+        )
+        _dbg_ambiguous("Overview query: Force ambiguous (skip auto-resolve)")
+        return options, False, []
+
     # 1) only one group
     if len(groups) == 1:
-        resolved_docs = [sd.doc for sd in groups[0][: effective_k]]
+        resolved_docs = _ensure_entities_coverage(
+            scored=scored,
+            docs=[sd.doc for sd in groups[0][: effective_k]],
+            query=query,
+            final_k=effective_k,
+            cfg=cfg
+        )
         return [], True, resolved_docs
 
-    # 2) resolve by group score gap
+    # 2) No auto-resolve for generic query
+    if len(groups) >= 2 and _is_generic_underspecified(query, cfg):
+        options = _prepare_retrieval_options(
+            groups=groups,
+            cfg=cfg,
+            effective_k=effective_k
+        )
+        return options, False, []
+
+    # 3) entity-aware
+    resolved_groups = _resolve_by_entity_coverage(
+        groups,
+        query=query,
+        cfg=cfg
+    )
+
+    if resolved_groups is not None:
+        groups = resolved_groups
+        if len(groups) == 1:
+            resolved_docs = _ensure_entities_coverage(
+                scored=scored,
+                docs=[sd.doc for sd in groups[0][: effective_k]],
+                query=query,
+                final_k=effective_k,
+                cfg=cfg
+            )
+            return [], True, resolved_docs
+    # 4) resolve by group score gap
     resolved_docs = _resolve_by_groups_score_gap(groups, cfg=cfg)
     if resolved_docs is not None:
-        return [], True, resolved_docs[: effective_k]
-
-    # 3) query-aware tie-break
+        resolved_docs = _ensure_entities_coverage(
+            scored=scored,
+            docs=resolved_docs[: effective_k],
+            query=query,
+            final_k=effective_k,
+            cfg=cfg
+        )
+        return [], True, resolved_docs
+    # 5) query-aware tie-break
     winner_docs = _tiebreak_groups_by_query_aware(
         groups=groups,
         query=query,
         cfg=cfg
     )
     if winner_docs is not None:
-        return [], True, winner_docs[: effective_k]
+        resolved_docs = _ensure_entities_coverage(
+            scored=scored,
+            docs=winner_docs[: effective_k],
+            query=query,
+            final_k=effective_k,
+            cfg=cfg
+        )
+        return [], True, resolved_docs
 
-    # 4) user options
+    # 6) user options
     options = _prepare_retrieval_options(
         groups=groups,
         cfg=cfg,
         effective_k=effective_k
     )
-
     return options, False, []
 
 def fetch_scored_docs_l2(

@@ -11,8 +11,11 @@ from src.rag.chain import build_rag_chain
 import argparse
 import time
 
+RED = "\033[91m"
+GREEN = "\033[92m"
+RESET = "\033[0m"
+
 def _as_dict(r: Any) -> dict[str, Any]:
-    # EvalResult is dataclass (frozen), so __dict__ works
     return dict(r.__dict__)
 
 def main() -> int:
@@ -20,6 +23,7 @@ def main() -> int:
     ap.add_argument("--qa", required=True, help="Path to QA jsonl")
     ap.add_argument("--out", required=True, help="Path to output eval jsonl")
     ap.add_argument("--strict", action="store_true", help="Exit non-zero if not 100% pass")
+    ap.add_argument("--ci", action="store_true", help="Run in CI mode")
     ap.add_argument("--limit", type=int, default=0, help="Limit number of cases (0=all)")
     ap.add_argument("--fail-fast", action="store_true", help="Stop on first failure")
     args = ap.parse_args()
@@ -28,21 +32,24 @@ def main() -> int:
     out_path = Path(args.out)
     summary_path = out_path.with_suffix(".summary.txt")
 
-    t0 = time.perf_counter()
+    start_time = time.perf_counter()
     rows = read_jsonl(qa_path)
     cases = validate_cases([parse_case(x) for x in rows])
 
     if args.limit and args.limit > 0:
         cases = cases[: args.limit]
 
-    chain = build_rag_chain()
+    chain = build_rag_chain(args.ci)
 
     results = []
     for case in cases:
+        t = time.perf_counter()
         r = run_case(chain, case)
         results.append(r)
 
         ok = (r.status_ok and r.sources_ok and r.hygiene_ok)
+        dt = time.perf_counter() - t
+        print(f"[{GREEN + 'OK' + RESET if ok else RED + 'FAIL' + RESET}][{case.id}] Time taken: {dt} seconds")
         if args.fail_fast and not ok:
             break
 
@@ -56,12 +63,12 @@ def main() -> int:
     total = len(results)
     rate = (passed / total * 100.0) if total else 0.0
 
-    print(f"[OK] Wrote: {out_path}")
-    print(f"[OK] Wrote: {summary_path}")
+    print(f"[{GREEN}OK{RESET}] Wrote: {out_path}")
+    print(f"[{GREEN}OK{RESET}] Wrote: {summary_path}")
     print(f"Pass rate: {rate:.2f}%")
 
-    dt = time.perf_counter() - t0
-    print(f"[EVAL] Total time taken: {dt} seconds")
+    end_time = time.perf_counter() - start_time
+    print(f"[EVAL] Total time taken: {end_time} seconds")
 
     if args.strict and (total == 0 or passed != total):
         return 1

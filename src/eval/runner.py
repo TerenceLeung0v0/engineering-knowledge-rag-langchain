@@ -20,9 +20,6 @@ def run_case(
     chain: Any,
     case: QACase
 ) -> EvalResult:
-    """
-    chain: your RAG chain object with invoke() method.
-    """
     payload = chain.invoke({"input": case.query})
 
     if not isinstance(payload, dict):

@@ -52,6 +52,5 @@ def check_artifacts_dir_ready(
 def check_vectorstore_ready() -> None:
     check_artifacts_dir_ready(
         path=VECTORSTORE_DIR,
-        hint="Run: python scripts/ingest_docs.py"
+        hint="Run: python scripts/ingest.py"
     )
-    

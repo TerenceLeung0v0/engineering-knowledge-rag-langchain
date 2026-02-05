@@ -1,14 +1,15 @@
 from __future__ import annotations
 from pathlib import Path
+from typing import Iterable
 from dataclasses import dataclass
+from collections import Counter
 
-from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 
 from src.config import (
-    RAW_DOCS_DIR, VECTORSTORE_DIR,
+    RAW_DOCS_DIR, CI_FIXTURES_RAW_DOCS_DIR,
     TEXT_SPLITTING_CONFIG, EMBEDDING_CONFIG,
     DEBUG_CONFIG, PROJECT_ROOT, RETRIEVAL_CONFIG
 )
@@ -17,6 +18,9 @@ from src.utils.text import clean_text
 from src.utils.diagnostics import build_debug_logger, warn as _warn
 from src.rag.embeddings import build_embeddings
 from src.rag.catalog import enrich_metadata
+from src.ingest.loaders.pdf_loader import load_pdfs_documents
+from src.ingest.loaders.html_loader import load_htmls_documents
+from src.ingest.loaders.md_loader import load_mds_documents
 from src.ingest.annotate import annotate_docs
 
 _debug_diag = build_debug_logger(
@@ -41,7 +45,8 @@ def _count_files(
     path: Path,
     ext: str
 ) -> int:
-    supported = {"pdf", "txt", "docx"}
+    supported = {"pdf", "html", "txt", "docx", "md"}
+    ext = ext.lower().lstrip(".")
     if ext not in supported:
         raise ValueError(f"Expected ext in {supported}, got {ext!r}.")
 
@@ -73,27 +78,12 @@ def _clean_documents(
     
     return cleaned_docs
 
-def _load_pdfs_from_dir(path: Path) -> list[Document]:
-    docs: list[Document] = []
-    
-    pdfs = list(path.glob("*.pdf"))
-    if not pdfs:
-        raise RuntimeError(f"No PDF documents found in {path}")    
-        
-    for pdf_path in sorted(pdfs):
-        loader = PyPDFLoader(str(pdf_path))
-        docs.extend(loader.load())
-    
-    return docs
-
 def _emit_ingest_diagnostics(chunks: list[Document]) -> None:
     """
     Emit ingestion diagnostics:
     - source distribution (Controlled via DEBUG_CONFIG["rag"]["ingest"]["print_diagnostics"])
     - missing source / page metadata warnings
     """
-    from collections import Counter
-    
     source_counter = Counter()
     missing_source = 0
     missing_page = 0
@@ -142,11 +132,54 @@ def _enrich_chunks_metadata(chunks: list[Document]) -> list[Document]:
 
     return enriched
 
-def build_vectorstore() -> IngestStats:
+def _load_documents(
+    *,
+    base_dir: Path | str,
+    file_exts: Iterable[str],
+) -> tuple[list[Document], dict[str, int]]:
     """
-    Build FAISS vectorstore from PDFs in RAW_DOCS_DIR
+    Wrapper for loading different documents types from base_dir/<type>/...
     """
-    docs = _load_pdfs_from_dir(RAW_DOCS_DIR)
+    base_dir = Path(base_dir)
+    normalized_exts = [e.lower().lstrip('.') for e in file_exts]
+
+    docs: list[Document] = []
+    if "pdf" in normalized_exts:
+        docs.extend(load_pdfs_documents(base_dir / "pdf"))
+    
+    if "html" in normalized_exts:
+        docs.extend(load_htmls_documents(base_dir / "html"))
+    
+    if "md" in normalized_exts:
+        docs.extend(load_mds_documents(base_dir / "md"))
+
+    supported = {"pdf", "html", "txt", "docx", "md"}
+    files_counts: dict[str, int] = {}
+    for ext in supported:
+        folder = base_dir / ext
+        files_counts[ext] = _count_files(folder, ext)  if folder.exists() else 0
+
+    return docs, files_counts
+    
+def build_vectorstore(
+    *,
+    src_dir: Path | str,
+    out_dir: Path | str,
+    file_exts: Iterable[str]
+) -> IngestStats:
+    """
+    Build FAISS vectorstore from docs under src_dir/<pdf|html|md>
+    """
+    src_dir = Path(src_dir)
+    out_dir = Path(out_dir)
+
+    docs, files_counts = _load_documents(
+        base_dir=src_dir,
+        file_exts=file_exts,
+    )
+    
+    if not docs:
+        raise ValueError(f"Error: No documents found under {src_dir} for file_exts={list(file_exts)}")
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=TEXT_SPLITTING_CONFIG["chunk_size"],
@@ -166,12 +199,15 @@ def build_vectorstore() -> IngestStats:
     embeddings = build_embeddings(EMBEDDING_CONFIG)
     vectorstore = FAISS.from_documents(chunks, embeddings)
 
-    VECTORSTORE_DIR.mkdir(parents=True, exist_ok=True)
-    vectorstore.save_local(str(VECTORSTORE_DIR))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    vectorstore.save_local(str(out_dir))
 
-    num_files = _count_files(RAW_DOCS_DIR, "pdf")
+    num_files =  sum(files_counts.values())
     num_pages = sum(1 for doc in docs if doc.metadata.get("page") is not None)
     num_chunks = len(chunks)
+
+    count_types = Counter(doc.metadata.get("doc_type") for doc in docs)
+    _debug_meta(f"doc_type count: {dict(count_types)}")
 
     return IngestStats(
         num_files=num_files,

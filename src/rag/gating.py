@@ -9,6 +9,9 @@ from src.schemas import ScoredDocument, RetrievalStatus, RetrievalStatusEnum
 from src.utils.diagnostics import build_debug_logger
 from src.rag.catalog import tag_signature
 
+EPS_HARD = 1e-4
+EPS_SEMANTIC = 0.01
+
 _dbg_abs = build_debug_logger(
     cfg=DEBUG_CONFIG,
     domain_path="rag.gating",
@@ -55,9 +58,9 @@ def _validate_absolute_gate(
         return False
 
     best = float(scored[0].score)
-    passed = best <= float(max_l2)
+    passed = best <= (float(max_l2) + EPS_HARD)
 
-    _dbg_abs(f"Hard threshold {'passed' if passed else 'failed'}: best={best:.4f}, max_l2={max_l2:.4f}")
+    _dbg_abs(f"Hard threshold {'passed' if passed else 'failed'}: best={best:.4f}, max_l2={max_l2:.4f}, eps={EPS_HARD}")
     return passed
 
 def _select_l2_threshold(
@@ -82,8 +85,8 @@ def _select_l2_threshold(
         return None
 
     best = float(scored[0].score)
-    if best > float(soft_max_l2):
-        _dbg_abs(f"Blocked: best({best:.4f}) > soft_max_l2({soft_max_l2:.4f})")
+    if best > (float(soft_max_l2) + EPS_SEMANTIC):
+        _dbg_abs(f"Blocked: best({best:.4f}) > soft_max_l2({soft_max_l2:.4f}) + eps({EPS_SEMANTIC})")
         return None
 
     _dbg_abs(f"Threshold selected: soft_max_l2={soft_max_l2:.4f}")

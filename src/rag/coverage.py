@@ -49,7 +49,7 @@ class CoverageConfig:
         raw_aliases = cfg.get("entity_aliases", {}) or {}
         for entity, aliases in raw_aliases.items():
             entity_patterns[str(entity)] = _compile(list(aliases) if aliases else [])
-     
+
         return cls(
             enabled=enabled,
             compare_patterns=compare,

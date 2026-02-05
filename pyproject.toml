@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "engineering-knowledge-rag-langchain"
-version = "0.4.0"
+version = "0.4.1"
 description = "RAG-based engineering knowledge assistant using LangChain"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 
 # Runtime dependencies
 dependencies = [
@@ -25,6 +25,10 @@ dependencies = [
 
     # PDF Processing
     "pypdf>=4.2.0",
+
+    # HTML Processing
+    "beautifulsoup4>=4.14.3",
+    "lxml>=6.0.2",
 
     # HuggingFace embeddings
     "sentence-transformers>=2.7.0",

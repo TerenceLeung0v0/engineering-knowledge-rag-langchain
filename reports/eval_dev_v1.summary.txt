@@ -1,5 +1,6 @@
 Total: 23
-Passed: 23
-Pass rate: 100.00%
+Passed: 22
+Pass rate: 95.65%
 
-Failures: none
+Failures:
+- DEV_IOT_001: status(ambiguous->ok)

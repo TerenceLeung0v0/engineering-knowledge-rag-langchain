@@ -54,8 +54,8 @@
 {"id":"WP_005","query":"According to the IoT white paper, what is meant by 'things' in IoT?","expect_status":"ok","min_sources":1}
 {"id":"WP_006","query":"According to the IoT white paper, what is the challenge of interoperability?","expect_status":"ok","min_sources":1}
 
-{"id":"EDGE_001","query":"resend job document","expect_status":"ok","notes":"you previously saw refuse; keep as regression check"}
-{"id":"EDGE_002","query":"threshold percentage of devices report failure","expect_status":"ok","notes":"you previously saw refuse; keep as regression check"}
+{"id":"EDGE_001","query":"resend job document","expect_status":"ok","notes":"previously saw refuse; keep as regression check"}
+{"id":"EDGE_002","query":"threshold percentage of devices report failure","expect_status":"ok","notes":"previously saw refuse; keep as regression check"}
 {"id":"EDGE_003","query":"job execution failure","expect_status":"ok","min_sources":1}
 {"id":"EDGE_004","query":"job timeout","expect_status":"ok","min_sources":1}
 {"id":"EDGE_005","query":"when do aws iot devices generate errors","expect_status":"ok","min_sources":1}

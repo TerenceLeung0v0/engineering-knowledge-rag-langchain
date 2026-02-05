@@ -17,11 +17,31 @@ class QACase:
     expect_status: str
     # Optional
     expect_sources: tuple[str, ...] = ()
+    expect_sources_any: tuple[str, ...] = ()
     min_sources: int = 0
     notes: str | None = None
 
 def _clean_str(x: Any) -> str:
     return str(x).strip()
+
+def _parse_sources_list(
+    *,
+    case_id: str,
+    raw: Any,
+    field_name: str
+) -> tuple[str, ...]:
+    if raw is None:
+        raw = []
+    
+    if not isinstance(raw, (list, tuple)):
+        raise ValueError(f"[{case_id}] {field_name} must be a list/tuple[str]")
+
+    outs: list[str] = []
+    for src in raw:
+        norm_src = _clean_str(src)
+        if norm_src:
+            outs.append(norm_src)
+    return tuple(outs)
 
 def parse_case(case: dict[str, Any]) -> QACase:
     if not isinstance(case, dict):
@@ -43,17 +63,17 @@ def parse_case(case: dict[str, Any]) -> QACase:
             f"Allowed: {sorted(ALLOWED_STATUS)}"
         )
 
-    srcs_raw = case.get("expect_sources", [])
-    if srcs_raw is None:
-        srcs_raw = []
-    if not isinstance(srcs_raw, (list, tuple)):
-        raise ValueError(f"[{case_id}] expect_sources must be a list[str]")
+    expect_sources = _parse_sources_list(
+        case_id=case_id,
+        raw=case.get("expect_sources", []),
+        field_name="expect_sources"        
+    )
 
-    srcs: list[str] = []
-    for src in srcs_raw:
-        src_cleaned = _clean_str(src)
-        if src_cleaned:
-            srcs.append(src_cleaned)
+    expect_sources_any = _parse_sources_list(
+        case_id=case_id,
+        raw=case.get("expect_sources_any", []),
+        field_name="expect_sources_any"        
+    )
 
     min_sources_raw = case.get("min_sources", 0)
     try:
@@ -73,7 +93,8 @@ def parse_case(case: dict[str, Any]) -> QACase:
         id=case_id,
         query=q,
         expect_status=expect_status,
-        expect_sources=tuple(srcs),
+        expect_sources=expect_sources,
+        expect_sources_any=expect_sources_any,
         min_sources=min_sources,
         notes=notes,
     )

@@ -1,5 +1,5 @@
-Total: 60
-Passed: 60
+Total: 24
+Passed: 24
 Pass rate: 100.00%
 
 Failures: none

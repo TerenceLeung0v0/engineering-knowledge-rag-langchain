@@ -16,11 +16,16 @@ def check_sources(
     case: QACase,
     actual_sources: tuple[dict[str, Any], ...]
 ) -> bool:
+    actual = {Path(str(src.get("source") or "")).name for src in actual_sources}
+
     if case.expect_sources:
         expect = {Path(s).name for s in case.expect_sources}
-        actual = {str(src.get("source") or "") for src in actual_sources}
         return expect.issubset(actual)
-    
+
+    if case.expect_sources_any:
+        expect_any = {Path(s).name for s in case.expect_sources_any}
+        return len(actual.intersection(expect_any)) > 0
+
     return len(actual_sources) >= int(case.min_sources)
 
 def check_hygiene(payload: dict[str, Any]) -> bool:
@@ -63,8 +68,7 @@ def extract_normalized_sources(payload: dict[str, Any]) -> tuple[dict[str, Any],
                 if isinstance(meta, dict):
                     outs.append(normalize_source_item(meta))
                 continue
-            
-            # Object-style (e.g. LangChain)
+
             meta = getattr(item, "metadata", None)
             if isinstance(meta, dict):
                 outs.append(normalize_source_item(meta))
