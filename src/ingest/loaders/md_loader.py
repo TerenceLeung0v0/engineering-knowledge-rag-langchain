@@ -28,7 +28,7 @@ def _read_markdown_file(
         "page": None,
         "page_label": None,
         "filetype": "md",
-        "doc_type": "md"
+        "source_format": "md"
     }
 
     return Document(page_content=text, metadata=meta)

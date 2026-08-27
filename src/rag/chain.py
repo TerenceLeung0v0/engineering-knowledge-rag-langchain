@@ -9,7 +9,7 @@ from src.config import (
     VECTORSTORE_DIR, CI_VECTORSTORE_DIR,
     RETRIEVAL_CONFIG, AMBIGUITY_CONFIG,
     EMBEDDING_CONFIG, LLM_CONFIG, PROMPT_CONFIG,
-    DEBUG_CONFIG
+    DEBUG_CONFIG, PROJECT_ROOT
 )
 from src.rag.embeddings import build_embeddings
 from src.rag.llms import build_llm
@@ -22,6 +22,7 @@ from src.rag.ambiguity import AmbiguityConfig
 from src.rag.entity_extract import EntityExtractor
 from src.rag.ood import OODConfig, ood_gate
 from src.rag.coverage import CoverageConfig, coverage_gate
+from src.rag.identity_coverage import IdentityCoverageConfig, identity_coverage_gate
 from src.schemas import RetrievalState, RetrievalStatusEnum
 from src.utils.diagnostics import build_debug_logger
 
@@ -129,6 +130,18 @@ def _guard_coverage_gate(
 
     return coverage_gate(state, cfg=cfg)
 
+def _guard_identity_coverage_gate(
+    state: RetrievalState,
+    *, cfg: IdentityCoverageConfig
+) -> RetrievalState:
+    if state.get("skip_llm", False):
+        return state
+
+    if not _is_status(state, RetrievalStatusEnum.OK.value):
+        return state
+
+    return identity_coverage_gate(state, cfg=cfg)
+
 def _guard_refuse_if_no_docs(state: RetrievalState) -> RetrievalState:
     if state.get("skip_llm", False):
         return state
@@ -173,6 +186,10 @@ def build_rag_chain(is_ci: bool=False) -> Runnable:
     gate_cfg = GateConfig.from_dict(RETRIEVAL_CONFIG)
     ood_cfg = OODConfig.from_dict(RETRIEVAL_CONFIG.get("ood"))
     cvg_cfg = CoverageConfig.from_dict(RETRIEVAL_CONFIG.get("coverage"))
+    identity_cvg_cfg = IdentityCoverageConfig.from_dict(
+        RETRIEVAL_CONFIG.get("identity_coverage"),
+        project_root=PROJECT_ROOT,
+    )
     entity_extractor = EntityExtractor(entity_patterns=cvg_cfg.entity_patterns)
     max_options=int(RETRIEVAL_CONFIG["max_options"])
     
@@ -219,8 +236,10 @@ def build_rag_chain(is_ci: bool=False) -> Runnable:
         | RunnableLambda(lambda s: _short_circuit_ambiguous(s, preview_n_sources=3))
         # Coverage gate for ok-state only
         | RunnableLambda(lambda s: _guard_coverage_gate(s, cfg=cvg_cfg))
+        # R7: evidence-identity coverage backstop for ok-state only
+        | RunnableLambda(lambda s: _guard_identity_coverage_gate(s, cfg=identity_cvg_cfg))
         # Decide refuse early for ok-state only
-        | RunnableLambda(_guard_refuse_if_no_docs)        
+        | RunnableLambda(_guard_refuse_if_no_docs)
         # Format docs into context string
         | RunnablePassthrough.assign(
             context=lambda x: format_docs_for_prompt(

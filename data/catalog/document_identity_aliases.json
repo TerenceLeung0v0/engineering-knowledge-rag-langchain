@@ -1,0 +1,24 @@
+{
+  "aliases": [
+    {
+      "requirement_id": "mqtt_v3_1_1_spec_reference",
+      "identity_kind": "equivalence_group",
+      "identity_value": "mqtt_v3_1_1_spec",
+      "patterns": [
+        "\\bthe\\s+mqtt\\s+specification\\s+itself\\b",
+        "\\bthe\\s+mqtt\\s+specification\\b",
+        "\\bthe\\s+mqtt\\s+protocol\\s+specification\\b",
+        "\\bmqtt\\s+spec(?:ification)?\\s+itself\\b"
+      ]
+    },
+    {
+      "requirement_id": "general_iot_whitepaper_2018_reference",
+      "identity_kind": "logical_document",
+      "identity_value": "general_iot_whitepaper_2018",
+      "patterns": [
+        "\\bthe\\s+general\\s+iot\\s+white\\s*paper\\b",
+        "\\bgeneral\\s+iot\\s+white\\s*paper\\b"
+      ]
+    }
+  ]
+}

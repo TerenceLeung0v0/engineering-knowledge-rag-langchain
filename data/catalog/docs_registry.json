@@ -2,19 +2,75 @@
   "rules": [
     {
       "match": {"filename": "mqtt-v3.1.1-os.pdf"},
-      "tags": {"domain": "mqtt", "doc_type": "spec", "vendor": "oasis", "product": "mqtt", "version": "3.1.1"}
+      "tags": {
+        "domain": "mqtt", "doc_type": "spec", "vendor": "oasis", "product": "mqtt", "version": "3.1.1",
+        "logical_document_id": "mqtt_v3_1_1_spec",
+        "equivalence_group_id": "mqtt_v3_1_1_spec"
+      }
+    },
+    {
+      "match": {"filename": "mqtt-v3-1-1-spec.html"},
+      "tags": {
+        "domain": "mqtt", "doc_type": "spec", "vendor": "oasis", "product": "mqtt", "version": "3.1.1",
+        "logical_document_id": "mqtt_v3_1_1_spec",
+        "equivalence_group_id": "mqtt_v3_1_1_spec"
+      }
     },
     {
       "match": {"filename": "iot-dg.pdf"},
-      "tags": {"domain": "aws_iot", "doc_type": "guide", "vendor": "aws", "product": "iot_core"}
+      "tags": {
+        "domain": "aws_iot", "doc_type": "guide", "vendor": "aws", "product": "iot_core",
+        "logical_document_id": "aws_iot_core_developer_guide"
+      }
+    },
+    {
+      "match": {"filename": "aws-iot-core-topics.html"},
+      "tags": {
+        "domain": "aws_iot", "doc_type": "guide", "vendor": "aws", "product": "iot_core",
+        "logical_document_id": "aws_iot_core_developer_guide"
+      }
+    },
+    {
+      "match": {"filename": "aws-iot-jobs-overview.html"},
+      "tags": {
+        "domain": "aws_iot", "doc_type": "guide", "vendor": "aws", "product": "iot_core",
+        "logical_document_id": "aws_iot_core_developer_guide"
+      }
+    },
+    {
+      "match": {"filename": "aws-iot-jobs-workflows.html"},
+      "tags": {
+        "domain": "aws_iot", "doc_type": "guide", "vendor": "aws", "product": "iot_core",
+        "logical_document_id": "aws_iot_core_developer_guide"
+      }
+    },
+    {
+      "match": {"filename": "aws-iot-job-execution-states.html"},
+      "tags": {
+        "domain": "aws_iot", "doc_type": "guide", "vendor": "aws", "product": "iot_core",
+        "logical_document_id": "aws_iot_core_developer_guide"
+      }
+    },
+    {
+      "match": {"filename": "aws-iot-thing-groups.html"},
+      "tags": {
+        "domain": "aws_iot", "doc_type": "guide", "vendor": "aws", "product": "iot_core",
+        "logical_document_id": "aws_iot_core_developer_guide"
+      }
     },
     {
       "match": {"filename": "designing-mqtt-topics-aws-iot-core.pdf"},
-      "tags": {"domain": "aws_iot", "doc_type": "whitepaper", "vendor": "aws", "product": "iot_core"}
+      "tags": {
+        "domain": "aws_iot", "doc_type": "whitepaper", "vendor": "aws", "product": "iot_core",
+        "logical_document_id": "designing_mqtt_topics_for_aws_iot_core_whitepaper"
+      }
     },
     {
       "match": {"filename": "white-paper-iot-july-2018.pdf"},
-      "tags": {"domain": "iot_general", "doc_type": "whitepaper", "vendor": "unknown", "product": "iot", "version": "2018"}
+      "tags": {
+        "domain": "iot_general", "doc_type": "whitepaper", "vendor": "unknown", "product": "iot", "version": "2018",
+        "logical_document_id": "general_iot_whitepaper_2018"
+      }
     }
   ]
 }

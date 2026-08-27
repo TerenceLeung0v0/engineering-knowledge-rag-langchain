@@ -22,7 +22,7 @@ def load_pdfs_documents(
         for d in loaded:
             d.metadata = d.metadata or {}
             d.metadata.setdefault("source", str(pdf_path))
-            d.metadata["doc_type"] = "pdf"
+            d.metadata["source_format"] = "pdf"
         
         docs.extend(loaded)
     
