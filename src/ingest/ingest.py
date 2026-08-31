@@ -206,8 +206,8 @@ def build_vectorstore(
     num_pages = sum(1 for doc in docs if doc.metadata.get("page") is not None)
     num_chunks = len(chunks)
 
-    count_types = Counter(doc.metadata.get("doc_type") for doc in docs)
-    _debug_meta(f"doc_type count: {dict(count_types)}")
+    count_types = Counter(doc.metadata.get("source_format") for doc in docs)
+    _debug_meta(f"source_format count: {dict(count_types)}")
 
     return IngestStats(
         num_files=num_files,

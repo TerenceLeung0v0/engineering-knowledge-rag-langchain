@@ -24,11 +24,11 @@ def test_entity_aware_resolve_prefers_jobs_group():
     )
 
     # Group A: aws_iot only
-    d1 = Document(page_content="iot core", metadata={"source":"a.pdf","entities":["aws_iot"], "domain":"aws_iot", "doc_type":"pdf", "product":"iot_core"})
-    d2 = Document(page_content="iot core 2", metadata={"source":"a.pdf","entities":["aws_iot"], "domain":"aws_iot", "doc_type":"pdf", "product":"iot_core"})
+    d1 = Document(page_content="iot core", metadata={"source":"a.pdf","entities":["aws_iot"], "domain":"aws_iot", "doc_type":"guide", "source_format":"pdf", "product":"iot_core"})
+    d2 = Document(page_content="iot core 2", metadata={"source":"a.pdf","entities":["aws_iot"], "domain":"aws_iot", "doc_type":"guide", "source_format":"pdf", "product":"iot_core"})
     # Group B: aws_iot + aws_iot_jobs
-    d3 = Document(page_content="jobs", metadata={"source":"b.pdf","entities":["aws_iot","aws_iot_jobs"], "domain":"aws_iot", "doc_type":"pdf", "product":"iot_jobs"})
-    d4 = Document(page_content="jobs 2", metadata={"source":"b.pdf","entities":["aws_iot_jobs"], "domain":"aws_iot", "doc_type":"pdf", "product":"iot_jobs"})
+    d3 = Document(page_content="jobs", metadata={"source":"b.pdf","entities":["aws_iot","aws_iot_jobs"], "domain":"aws_iot", "doc_type":"guide", "source_format":"pdf", "product":"iot_jobs"})
+    d4 = Document(page_content="jobs 2", metadata={"source":"b.pdf","entities":["aws_iot_jobs"], "domain":"aws_iot", "doc_type":"guide", "source_format":"pdf", "product":"iot_jobs"})
 
     scored = [
         ScoredDocument(doc=d1, score=0.30),

@@ -21,6 +21,18 @@ class DocTags:
     product: str | None = None    # iot_core, mqtt
     version: str | None = None    # 3.1.1, etc
 
+    # Identity fields (registry-owned). This module only carries and
+    # enriches them onto document metadata -- tag_signature() (below) never
+    # reads logical_document_id or equivalence_group_id, and semantic-family
+    # grouping (domain/doc_type/product) remains a distinct concept from
+    # document/evidence identity. The identity fields themselves are read
+    # and consumed elsewhere: src/rag/document_identity.py resolves explicit
+    # source references in a query to a required identity, and
+    # src/rag/identity_coverage.py checks admitted documents' metadata
+    # against that requirement.
+    logical_document_id: str | None = None     # identity of the authored work
+    equivalence_group_id: str | None = None    # evidence-acceptance equivalence group
+
     def to_metadata(self) -> dict[str, str]:
         out: dict[str, str] = {}
         if self.domain:
@@ -33,6 +45,10 @@ class DocTags:
             out["product"] = self.product
         if self.version:
             out["version"] = self.version
+        if self.logical_document_id:
+            out["logical_document_id"] = self.logical_document_id
+        if self.equivalence_group_id:
+            out["equivalence_group_id"] = self.equivalence_group_id
         return out
 
 def _norm_opt_str(value: Any) -> str | None:
@@ -117,7 +133,9 @@ def resolve_doc_tags(
                 doc_type=_norm_tag_value(tags.get("doc_type")),
                 vendor=_norm_tag_value(tags.get("vendor")),
                 product=_norm_tag_value(tags.get("product")),
-                version=_norm_tag_value(tags.get("version"))
+                version=_norm_tag_value(tags.get("version")),
+                logical_document_id=_norm_tag_value(tags.get("logical_document_id")),
+                equivalence_group_id=_norm_tag_value(tags.get("equivalence_group_id"))
             )
 
     return DocTags()

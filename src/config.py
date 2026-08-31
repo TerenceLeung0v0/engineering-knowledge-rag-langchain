@@ -276,6 +276,16 @@ RETRIEVAL_CONFIG = {
             },
         },
     },
+
+    # R7: post-retrieval evidence-identity coverage backstop. When enabled,
+    # a query whose R6-resolved requirements are not satisfied by the
+    # admitted evidence is refused rather than allowed to answer. Enabled by
+    # default; disabling it restores pre-R7 (R1+R6-only) behavior as a
+    # complete rollback/no-op path, with no other configuration change
+    # required.
+    "identity_coverage": {
+        "enabled": True,
+    },
 }
 
 # Text splitting

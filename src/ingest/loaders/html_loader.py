@@ -46,7 +46,7 @@ def load_htmls_documents(
         html_doc = _read_html(html_path)
         meta = {
             "source": str(html_path),
-            "doc_type": "html",
+            "source_format": "html",
             "title": html_doc.title or html_path.stem,
         }
         docs.append(Document(
